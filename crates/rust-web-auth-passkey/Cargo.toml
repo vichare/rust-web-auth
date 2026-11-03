@@ -1,0 +1,29 @@
+[package]
+name = "rust-web-auth-passkey"
+description = "Storage- and framework-independent known-user WebAuthn passkeys"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version = "1.89"
+
+[dependencies]
+async-trait.workspace = true
+base64.workspace = true
+chrono.workspace = true
+getrandom.workspace = true
+hmac.workspace = true
+rust-web-auth-core = { path = "../rust-web-auth-core" }
+sha2.workspace = true
+thiserror.workspace = true
+url.workspace = true
+uuid.workspace = true
+webauthn-rs.workspace = true
+
+[dev-dependencies]
+serde_json = "1"
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+webauthn-rs-core = "=0.6.2"
+
+[lints]
+workspace = true

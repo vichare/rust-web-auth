@@ -1,6 +1,6 @@
 # Cook and SOP-Node consumer checklist
 
-Updated: 2026-11-03
+Updated: 2026-11-04
 
 ## Required for both consumers
 
@@ -25,6 +25,17 @@ Updated: 2026-11-03
 - [ ] Exercise current-device and all-device logout.
 - [ ] Add end-to-end tests proving frontend JavaScript never receives Google
   code, access token, or ID token.
+- [ ] Implement `EmailOtpAttemptStore`, `EmailSender`, and
+  `EmailOtpRateLimiter`; persist only keyed challenge/code digests.
+- [ ] Atomically enforce one active challenge, resend cooldown, five guesses,
+  expiry, success consumption, and exhaustion invalidation.
+- [ ] Return one anti-enumeration response for OTP requests and one generic
+  verification failure; never log email, code, challenge ID, or request body.
+- [ ] Implement passkey ceremony and credential stores with atomic one-time
+  challenge consumption, opaque user handles, multiple credentials, counter
+  updates, global credential-ID uniqueness, and per-credential revocation.
+- [ ] Require an authenticated context for passkey registration and explicit
+  account linking. Never merge accounts because email strings match.
 
 ## Cook
 
@@ -32,6 +43,10 @@ Updated: 2026-11-03
 - **Unverified:** User ID type, persistence transaction primitives, HTTP
   framework, production origin, callback path, and existing session schema.
 - [ ] Decide and document those values in Cook's authoritative repository.
+- [ ] Add email delivery and passkey storage adapters suitable for mainland
+  China; keep Google as an optional provider.
+- [ ] Validate SMTP/provider reachability and real platform/cross-platform
+  authenticators in staging.
 - [ ] Confirm first-login user creation and identity mapping are one atomic
   consumer operation.
 - [ ] Name cookies distinctly, for example `__Host-cook_session` and

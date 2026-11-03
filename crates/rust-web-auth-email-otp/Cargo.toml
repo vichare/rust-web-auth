@@ -1,0 +1,25 @@
+[package]
+name = "rust-web-auth-email-otp"
+description = "Storage- and mail-provider-independent email OTP authentication"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+async-trait.workspace = true
+base64.workspace = true
+chrono.workspace = true
+getrandom.workspace = true
+hmac.workspace = true
+serde.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+url.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+
+[lints]
+workspace = true

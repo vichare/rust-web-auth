@@ -1,22 +1,22 @@
 # rust-web-auth
 
 Reusable, storage-independent Rust web authentication for Cook, SOP-Node, and
-other first-party applications. The first release intentionally supports
-backend Google OIDC and browser application sessions only; there is no desktop
-channel.
+other first-party applications. It supports backend Google OIDC, email OTP,
+passkeys, and browser application sessions; there is no desktop channel.
 
 ## Status
 
-- **updated:** 2026-11-03
+- **updated:** 2026-11-04
 - **status:** active
-- **progress:** Core login/session services, Google adapter, HTTP helpers,
-  security tests, and consumer documentation are implemented and ready for a
-  pinned Git revision.
+- **progress:** Core login/session services, Google adapter, mainland-China
+  phase 1 email-OTP/passkey foundations, HTTP helpers, security tests, and
+  consumer documentation are implemented.
 - **decisions:** Each consumer owns its users, identity mappings, sessions,
   database, keys, rate limits, and host-only cookies. Consumers pin an exact Git
   revision. `(issuer, subject)` is the only external identity key.
-- **next actions:** Pin this revision in Cook, then adapt SOP-Node and collect
-  consumer feedback before the next API release.
+- **next actions:** Upgrade Cook to the new pinned revision, implement its
+  storage/mail adapters and explicit account-linking UI, then validate real
+  passkeys and mail delivery in staging.
 
 ### Facts and unverified assumptions
 
@@ -26,12 +26,16 @@ channel.
   updates, but consumers choose the database.
 - **Fact:** Google discovery/JWKS are lazy, cached for one hour by default, and
   refreshed single-flight after a signature failure.
+- **Fact:** Email-OTP and passkey support are independent crates, so existing
+  Google consumers do not compile their heavier dependencies.
+- **Fact:** Shared services return verified identities or consumer user IDs but
+  never merge accounts by matching email.
 - **Unverified:** Cook's final user identifier representation, database
   transaction API, route layout, and rate-limit key.
 - **Unverified:** SOP-Node's existing records can be migrated without a
   compatibility reader. Confirm during consumer adaptation.
-- **Unverified:** The exact Git revision consumers will pin does not exist until
-  these reviewed changes are committed.
+- **Unverified:** Cook and SOP-Node have not yet pinned the revision containing
+  email OTP and passkey support in their manifests.
 
 ## Workspace boundaries
 
@@ -40,6 +44,8 @@ channel.
 | `rust-web-auth-core` | Domain models, ports, Authorization Code + S256 PKCE orchestration, identity mapping boundary, and application sessions |
 | `rust-web-auth-google` | Google discovery, token exchange, ID-token verification, JWKS caching/rotation |
 | `rust-web-auth-http` | Secure host-only cookie construction, log-safe request metadata, trusted request context wrapper |
+| `rust-web-auth-email-otp` | CSPRNG six-digit email codes, opaque challenge IDs, atomic attempt policy, layered rate limits, and verified email completion |
+| `rust-web-auth-passkey` | Typed `webauthn-rs` registration/authentication ceremonies, challenge state, credential persistence ports, counter updates, and revocation |
 
 The HTTP crate deliberately does not choose Axum, Actix, or another framework.
 An application handler reads the state cookie/query, calls the core service,
@@ -67,6 +73,17 @@ and translates the classified result into its own response.
 - Request-log helpers discard the complete query and identify
   `Cookie`, `Set-Cookie`, `Authorization`, and `Proxy-Authorization` as
   sensitive.
+- Email OTP uses an unbiased CSPRNG six-digit code and independent 256-bit
+  challenge ID. Only challenge-bound, server-secret HMAC digests are persisted.
+- OTP attempts expire after 10 minutes, enforce a resend cooldown and five
+  guesses, keep one active challenge per email/purpose, and atomically
+  invalidate on success, expiry, exhaustion, or replacement.
+- OTP request completion has no account lookup, and therefore no
+  account-existence result. Consumers render one uniform accepted response.
+- Passkey RP ID/origin configuration fails closed, user verification is
+  required, and challenge state is short-lived and one-time.
+- Passkey registration requires an authenticated user. Authentication returns
+  the consumer user recorded in the ceremony and never links by email.
 
 See [SECURITY.md](SECURITY.md) for the threat model.
 
@@ -79,10 +96,15 @@ Pin a reviewed commit; never consume a moving branch:
 rust-web-auth-core = { git = "https://github.com/vichare/rust-web-auth", rev = "<REVIEWED_COMMIT_SHA>" }
 rust-web-auth-google = { git = "https://github.com/vichare/rust-web-auth", rev = "<REVIEWED_COMMIT_SHA>" }
 rust-web-auth-http = { git = "https://github.com/vichare/rust-web-auth", rev = "<REVIEWED_COMMIT_SHA>" }
+rust-web-auth-email-otp = { git = "https://github.com/vichare/rust-web-auth", rev = "<REVIEWED_COMMIT_SHA>" }
+rust-web-auth-passkey = { git = "https://github.com/vichare/rust-web-auth", rev = "<REVIEWED_COMMIT_SHA>" }
 ```
 
-`<REVIEWED_COMMIT_SHA>` is intentionally unverified until this implementation
-is reviewed and committed.
+Select only the crates the application uses. Existing Google-only consumers
+remain source compatible and do not inherit email or WebAuthn dependencies.
+The existing core/Google/HTTP/email crates retain Rust 1.85 compatibility;
+`rust-web-auth-passkey` requires Rust 1.89 to use maintained
+`webauthn-rs 0.6.2`.
 
 ## Quick integration
 
@@ -160,7 +182,9 @@ The library cannot make a weak database atomic. Implementations must provide:
 6. A periodic call to `LoginService::cleanup_attempts`.
 
 See [docs/consumer-ports-checklist.md](docs/consumer-ports-checklist.md) for
-Cook/SOP adaptation work.
+Cook/SOP adaptation work and
+[docs/china-auth-integration.md](docs/china-auth-integration.md) for the
+mainland-China phase 1 migration.
 
 ## Development
 
