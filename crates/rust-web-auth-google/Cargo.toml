@@ -1,0 +1,28 @@
+[package]
+name = "rust-web-auth-google"
+description = "Google OpenID Connect provider adapter for rust-web-auth"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+async-trait.workspace = true
+openidconnect.workspace = true
+reqwest.workspace = true
+rust-web-auth-core = { path = "../rust-web-auth-core" }
+tokio.workspace = true
+tracing.workspace = true
+thiserror.workspace = true
+url.workspace = true
+
+[dev-dependencies]
+axum = "0.8"
+chrono = { workspace = true, features = ["clock"] }
+rsa = "0.9"
+serde_json = "1"
+tokio = { workspace = true, features = ["macros", "net", "rt-multi-thread"] }
+
+[lints]
+workspace = true
